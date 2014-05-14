@@ -11,7 +11,7 @@ if(isset($_SESSION['loginID']))
 
 
 
-<form name="input" action="user_login_select.php" method="get">
+<form name="input" action="sql_user_login.php" method="get">
 Username: <input type="text" name="username"></br>
 Password: <input type="password" name="password">
 <input type="submit" value="Submit">

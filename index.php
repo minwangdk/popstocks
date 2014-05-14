@@ -77,7 +77,7 @@ if(isset($_SESSION['loginID']))
 
 
 <div class=thumbnail>	
-<a href="pops/Gangnam_Style/pop_page.php"><img id="thumb" src="pops/Gangnam_Style/images/pop_pic.jpg" alt="Thumbnail of Gangnam Style" /></a>
+<a href="GangnamStyle.php"><img id="thumb" src="popdata/GangnamStyle/pop_pic.jpg" alt="Thumbnail of Gangnam Style" /></a>
 </div>
 
 <div class=register>

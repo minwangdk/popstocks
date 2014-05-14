@@ -13,13 +13,10 @@ $db_password = 'godaddyIllus22';
 $db_name = 'popcorn';
 
 //get data from form page
-$buy = $_GET['buy'];
-$sell = $_GET['sell'];
 $id = $_SESSION['loginID'];
 $username = $_SESSION['loginName'];
-$popid = $buy + $sell;
-$buyorsell = $buy - $sell;
-
+$popid = $_GET['popid'];
+$buyorsell = $_GET['buyorsell'];
 
 try {
 		
@@ -38,11 +35,11 @@ try {
 	$priceresult = $getprice->fetchAll();
 	$price = $priceresult[0]['stockprice'];
 	$popname = $priceresult[0]['popname']; 
-	if ($result == 1){
+	if ($result){
 		echo 'Price of ' .$popname. ' was ' .$price. '</br>';
 	}
 	//Check eligibility of purchase/sale
-	if ($buyorsell == 1){
+	if ($buyorsell === 'buy'){
 		$checkpopcorn = $dbh->prepare("
 		SELECT popcorn
 		FROM users
@@ -50,11 +47,11 @@ try {
 		$result = $checkpopcorn->execute();
 		$popcornresult = $checkpopcorn->fetchAll();
 		$popcorn = $popcornresult[0]['popcorn'];
-		if ($result == 1){
+		if ($result){
 			echo 'Your popcorn: ' .$popcorn. '</br>';
 		}
 	}
-	if ($buyorsell == -1){
+	if ($buyorsell === 'sell'){
 		$checkstocks = $dbh->prepare("
 		SELECT quantity
 		FROM ownership
@@ -62,15 +59,15 @@ try {
 		$result = $checkstocks->execute();
 		$checkstocksresult = $checkstocks->fetchAll();
 		$stocks = $checkstocksresult[0]['quantity'];
-		if ($result == 1){
+		if ($result){
 			echo 'You currently have ' .$stocks. ' shares of ' .$popname. '!</br>';
 		}
 	}
 	$eligible = FALSE;
-	if (($buyorsell == 1) && ($popcorn >= $price)){
+	if (($buyorsell === 'buy') && ($popcorn >= $price)){
 		$eligible = TRUE;
 	}
-	if (($buyorsell == -1) && ($stocks > 0)){
+	if (($buyorsell === 'sell') && ($stocks > 0)){
 		$eligible = TRUE;
 	}
 	echo $username. ' is eligible ' .var_export($eligible,true). '</br>';
@@ -78,24 +75,31 @@ try {
 	//Insert buy/sell order into  DB
 	//Change stockprice
 	if ($eligible){
+		if ($buyorsell === 'buy'){
+			$sqlbuysell = 1;
+		}
+		if ($buyorsell === 'sell'){
+			$sqlbuysell = -1;
+		}
+		
 		$changeprice = $dbh->prepare("
 		UPDATE pops
-		SET stockprice = stockprice + 1 * '$buyorsell'
+		SET stockprice = stockprice + 1 * '$sqlbuysell'
 		WHERE id = '$popid' ");
 		$result = $changeprice -> execute();
-		if ($result == 1){
-			echo $popname . '\'s stockprice has changed to ' .($price + $buyorsell) .'</br>';
+		if ($result){
+			echo $popname . '\'s stockprice has changed to ' .($price + $sqlbuysell) .'</br>';
 			
 			//Remove or add popcorn from/to user
 			$paypopcorn = $dbh->prepare("
 			UPDATE users 
-			SET popcorn = popcorn - '$buyorsell' * '$price'  
+			SET popcorn = popcorn - '$sqlbuysell' * '$price'  
 			WHERE id = '$id' ");
 			$result = $paypopcorn->execute();	
-			if ($result == 1){
-				if ($buyorsell == 1){
+			if ($result){
+				if ($buyorsell === 'buy'){
 					$earnspend = ' spent ';
-				} else if ($buyorsell == -1){
+				} else if ($buyorsell === 'sell'){
 					$earnspend = ' earned ';
 				}
 				echo $username .$earnspend .$price .' popcorn</br>';
@@ -103,29 +107,30 @@ try {
 				//Give popstock to user
 				$givestock = $dbh->prepare("
 				INSERT INTO ownership (user, pop, quantity) 
-				VALUES ('$id', '$popid', '$buyorsell') 
-				ON DUPLICATE KEY UPDATE quantity = quantity + '$buyorsell'");
+				VALUES ('$id', '$popid', '$sqlbuysell') 
+				ON DUPLICATE KEY UPDATE quantity = quantity + '$sqlbuysell'");
 				$result = $givestock->execute();
 				
-				if ($result == 1){
-					if ($buyorsell == 1){
+				if ($result){
+					if ($buyorsell === 'buy'){
 						echo 'Ownership updated, you invested in ' .$popname. '!</br>';
-					} else if ($buyorsell == -1){
+					} else if ($buyorsell === 'sell'){
 						echo 'Ownership updated, you sold ' .$popname. '!</br>';
 					}
-						
+
+					
 				}
 			}
 		}
 	//Error msg
-	} else if ($buyorsell == 1) {
+	} else if ($buyorsell === 'buy') {
 		echo 'You dont have enough popcorn to buy this stock';
-	} else if ($buyorsell == -1) {
+	} else if ($buyorsell === 'sell') {
 		echo 'You dont have any shares in this popstock to sell';
 	}
 	
 	?>
-	<pre><? var_dump($priceresult); ?></pre>
+	<pre><? var_dump($sqlbuysell); ?></pre>
 	<?
 	
 
